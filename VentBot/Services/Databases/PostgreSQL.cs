@@ -1,9 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VentBot.Models;
 
 namespace VentBot.Services.Databases;
@@ -12,4 +7,9 @@ namespace VentBot.Services.Databases;
 public class PostgreSQL : DbContext, IGuildTemplate
 {
     public DbSet<Guild> Guilds { get; set; }
+
+    public async Task<Guild> EnsureGuildAsync(ulong id)
+    {
+        throw new NotImplementedException();
+    }
 }

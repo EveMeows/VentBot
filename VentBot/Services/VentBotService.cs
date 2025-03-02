@@ -37,6 +37,9 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
     {
         await using SQLite context = await factory.CreateDbContextAsync();
 
+        // Testing purposes
+        // Ensure the database is deleted first
+        // We do this incase we change how the tables look while developing.
         bool deleted = context.Database.EnsureDeleted();
 		logger.LogInformation("DataBase erasure status: {}", deleted ? "success" : "failure");
 
