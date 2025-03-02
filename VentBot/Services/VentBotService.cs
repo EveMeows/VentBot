@@ -49,7 +49,7 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        // We use db-first because I can't be asked.
+        // We use code-first because I can't be asked.
         await EnsureDatabaseExistence();
 
         client.UseInteractivity(new InteractivityConfiguration { Timeout = TimeSpan.FromSeconds(30) });

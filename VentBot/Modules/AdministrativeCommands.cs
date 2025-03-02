@@ -9,43 +9,9 @@ using VentBot.Services.Databases;
 namespace VentBot.Modules;
 
 [RequireUserPermissions(Permissions.Administrator)]
-[SlashCommandGroup("admin", "Administrative commands. (Commands will automatically enroll.)")]
+[SlashCommandGroup("admin", "Administrative commands.")]
 public class AdministrativeCommands(IDbContextFactory<SQLite> factory) : ApplicationCommandModule
 {
-    [SlashCommand("enroll", "Enroll the server into the database.")]
-    public async Task EnrollCommand(InteractionContext ctx)
-    {
-        await using SQLite context = await factory.CreateDbContextAsync();
-
-        Guild? dbGuild = await context.Guilds.FirstOrDefaultAsync(g => g.ID == ctx.Guild.Id);
-        if (dbGuild is not null)
-        {
-            await ctx.CreateResponseAsync(
-                    InteractionResponseType.ChannelMessageWithSource,
-                    new DiscordInteractionResponseBuilder()
-                        .WithContent("Your guild is already enrolled into the database!")
-                        .AsEphemeral()
-                );
-
-            return;
-        }
-
-        Guild enroll = new Guild
-        {
-            ID = ctx.Guild.Id
-        };
-
-        await context.Guilds.AddAsync(enroll);
-		await context.SaveChangesAsync();
-
-        await ctx.CreateResponseAsync(
-            InteractionResponseType.ChannelMessageWithSource,
-            new DiscordInteractionResponseBuilder()
-                .WithContent("Thank you! You are now part of the family!")
-                .AsEphemeral()
-        );
-    }
-
     [SlashCommand("setvent", "Set the venting catgeory.")]
     public async Task VentCategoryCommand(
         InteractionContext ctx,

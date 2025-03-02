@@ -6,10 +6,11 @@ namespace VentBot.Services.Databases;
 public class SQLite(IConfiguration config) : DbContext, IGuildTemplate
 {
     public DbSet<Guild> Guilds { get; set; }
+    public DbSet<Channel> ActiveChannels { get; set; }
 
     public async Task<Guild> EnsureGuildAsync(ulong id)
     {
-        Guild? guild = await Guilds.FirstOrDefaultAsync(g => g.ID == id);
+        Guild? guild = await Guilds.Include(g => g.ActiveChannels).FirstOrDefaultAsync(g => g.ID == id);
         if (guild is null)
         {
             guild = new Guild
