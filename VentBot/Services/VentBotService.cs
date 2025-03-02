@@ -2,16 +2,20 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Exceptions;
 using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.EventArgs;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using System.Timers;
+using VentBot.Models;
 using VentBot.Services.Databases;
+using Timer = System.Timers.Timer;
 
 namespace VentBot.Services;
 
-public class VentBotService(ILogger<VentBotService> logger, DiscordClient client, IServiceProvider services, IDbContextFactory<SQLite> factory) : IHostedService
+public class VentBotService(ILogger<VentBotService> logger, DiscordClient client, IServiceProvider services, IDbContextFactory<SQLite> factory) : IHostedService, IDisposable
 {
     #region Events
     private async Task SlashErrored(SlashCommandsExtension s, SlashCommandErrorEventArgs e)
@@ -31,7 +35,36 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
 			);
 		}
 	}
+
+    private async void CheckChannels(object? sender, ElapsedEventArgs e)
+    {
+        await using SQLite context = await factory.CreateDbContextAsync();
+
+        foreach (Channel channel in context.ActiveChannels.Include(c => c.Guild))
+        {
+            if (!channel.Guild.AutoDelete) continue;
+
+            DateTime now = DateTime.Now;
+            TimeSpan diff = now - channel.LastMessage;
+
+            if (diff.TotalMinutes > channel.Guild.DeletionTimeout)
+            {
+                // Erase from discord.
+                DiscordChannel discordChannel = await client.GetChannelAsync(channel.ID);
+                await discordChannel.DeleteAsync();
+
+                // Erase from database
+                channel.Guild.ActiveChannels.Remove(channel);
+                context.ActiveChannels.Remove(channel);
+
+                await context.SaveChangesAsync();
+            }
+        }
+    }
+
     #endregion
+
+    private Timer? _timer;
 
     private async Task EnsureDatabaseExistence()
     {
@@ -52,6 +85,14 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
         // We use code-first because I can't be asked.
         await EnsureDatabaseExistence();
 
+        // Set the check timer.
+        // It will check if any venting channels are ready to be deleted every minute
+        _timer = new Timer(60000);
+        _timer.AutoReset = true;
+        _timer.Enabled = true;
+
+        _timer.Elapsed += CheckChannels;
+
         client.UseInteractivity(new InteractivityConfiguration { Timeout = TimeSpan.FromSeconds(30) });
 
 		SlashCommandsExtension slash = client.UseSlashCommands(new SlashCommandsConfiguration { 
@@ -68,5 +109,10 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
     {
         logger.LogInformation("Client disconnecting.");
         await client.DisconnectAsync();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
     }
 }

@@ -70,7 +70,7 @@ public class VentCommands(IDbContextFactory<SQLite> factory) : ApplicationComman
         { 
             embed.AddField(
                 "Auto deletion.",
-                $"This channel will delete itself after it goes inactive for {guild.DeletionTimeout}minutes.",
+                $"This channel will delete itself after it goes inactive for {guild.DeletionTimeout} minute(s).",
                 true
             );
         }
@@ -88,7 +88,6 @@ public class VentCommands(IDbContextFactory<SQLite> factory) : ApplicationComman
         {
             ID = ventChannel.Id,
             CreatedBy = ctx.Member.Id,
-
             LastMessage = DateTime.Now
         };
 

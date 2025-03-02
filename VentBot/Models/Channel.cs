@@ -6,4 +6,7 @@ public class Channel
     public ulong CreatedBy { get; set; }
 
     public DateTime LastMessage { get; set; }
+
+    public ulong GuildID { get; set; }
+    public Guild Guild { get; set; } = null!;
 }

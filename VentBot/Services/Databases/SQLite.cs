@@ -25,6 +25,16 @@ public class SQLite(IConfiguration config) : DbContext, IGuildTemplate
         return guild;
     }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Channel>()
+            .HasOne(c => c.Guild)
+            .WithMany(g => g.ActiveChannels)
+            .HasForeignKey(c => c.GuildID)
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
+    }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         string documents = Environment.GetFolderPath(Environment.SpecialFolder.Personal);
