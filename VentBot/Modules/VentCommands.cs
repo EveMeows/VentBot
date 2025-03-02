@@ -88,7 +88,6 @@ public class VentCommands(IDbContextFactory<SQLite> factory) : ApplicationComman
         {
             ID = ventChannel.Id,
             CreatedBy = ctx.Member.Id,
-            LastMessage = DateTime.Now
         };
 
         guild.ActiveChannels.Add(channel);

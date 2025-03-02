@@ -2,7 +2,6 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.Exceptions;
 using DSharpPlus.Interactivity;
-using DSharpPlus.Interactivity.Enums;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.EventArgs;
@@ -44,13 +43,18 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
         {
             if (!channel.Guild.AutoDelete) continue;
 
+            DiscordChannel discordChannel = await client.GetChannelAsync(channel.ID);
+            
+            // Get last message timestamp of channel.
+            IReadOnlyList<DiscordMessage> messages = await discordChannel.GetMessagesAsync(1);
+            DateTime lastMessage = messages[0].Timestamp.DateTime;
+
             DateTime now = DateTime.Now;
-            TimeSpan diff = now - channel.LastMessage;
+            TimeSpan diff = now - lastMessage;
 
             if (diff.TotalMinutes > channel.Guild.DeletionTimeout)
             {
                 // Erase from discord.
-                DiscordChannel discordChannel = await client.GetChannelAsync(channel.ID);
                 await discordChannel.DeleteAsync();
 
                 // Erase from database
@@ -61,7 +65,6 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
             }
         }
     }
-
     #endregion
 
     private Timer? _timer;
@@ -86,8 +89,8 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
         await EnsureDatabaseExistence();
 
         // Set the check timer.
-        // It will check if any venting channels are ready to be deleted every minute
-        _timer = new Timer(60000);
+        // It will check if any venting channels are ready to be deleted every 50 seconds.
+        _timer = new Timer(50000);
         _timer.AutoReset = true;
         _timer.Enabled = true;
 

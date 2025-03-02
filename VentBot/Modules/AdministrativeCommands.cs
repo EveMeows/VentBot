@@ -8,16 +8,36 @@ using VentBot.Services.Databases;
 
 namespace VentBot.Modules;
 
-[RequireUserPermissions(Permissions.Administrator)]
 [SlashCommandGroup("admin", "Administrative commands.")]
+[RequirePermissions(Permissions.Administrator)]
 public class AdministrativeCommands(IDbContextFactory<SQLite> factory) : ApplicationCommandModule
 {
+    #region Helpers
+    private async Task<bool> CheckAdmin(InteractionContext ctx)
+	{
+		if (!ctx.Member.Permissions.HasPermission(Permissions.Administrator)) 
+		{
+			await ctx.CreateResponseAsync(
+				InteractionResponseType.ChannelMessageWithSource,
+				new DSharpPlus.Entities.DiscordInteractionResponseBuilder()
+					.WithContent("You do not have permission to do that!\nAsk your server administrator to do this...")
+					.AsEphemeral()
+			);
+			return false;
+		}
+
+		return true;
+	}
+	#endregion
+
     [SlashCommand("setvent", "Set the venting catgeory.")]
     public async Task VentCategoryCommand(
         InteractionContext ctx,
         [Option("category", "The category to set.")] DiscordChannel channel
     )
     {
+        if (!await CheckAdmin(ctx)) return;
+
         await using SQLite context = await factory.CreateDbContextAsync();
 
         Guild guild = await context.EnsureGuildAsync(ctx.Guild.Id);
@@ -50,10 +70,12 @@ public class AdministrativeCommands(IDbContextFactory<SQLite> factory) : Applica
     [SlashCommand("deletion", "Set the vent deletion settings.")]
     public async Task TimeoutCommad(
         InteractionContext ctx,
-        [Option("timeout", "The new timeout.")] long timeout,
+        [Option("timeout", "The new timeout in minutes.")] long timeout,
         [Option("autodelete", "Should the channel autodelete?")] bool delete
     )
     {
+        if (!await CheckAdmin(ctx)) return;
+        
         if (timeout < 1 || timeout > 60)
         {
             await ctx.CreateResponseAsync(
