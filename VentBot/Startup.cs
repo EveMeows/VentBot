@@ -1,6 +1,7 @@
 using DSharpPlus;
 using System.Reflection;
 using VentBot.Services;
+using VentBot.Services.Databases;
 
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 
@@ -15,6 +16,12 @@ builder.Services.AddSingleton(x =>
 			DiscordIntents.MessageContents
     })
 );
+
+// Database Factory
+// We use a factory because, unlike ASP.NET
+// Normal Worker Services do not automatically handle lifetimes.
+builder.Services.AddDbContextFactory<SQLite>();
+
 
 // Add the main service.
 builder.Services.AddHostedService<VentBotService>();

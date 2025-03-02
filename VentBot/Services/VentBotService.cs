@@ -5,11 +5,13 @@ using DSharpPlus.Interactivity;
 using DSharpPlus.Interactivity.Extensions;
 using DSharpPlus.SlashCommands;
 using DSharpPlus.SlashCommands.EventArgs;
+using Microsoft.EntityFrameworkCore;
 using System.Reflection;
+using VentBot.Services.Databases;
 
 namespace VentBot.Services;
 
-public class VentBotService(ILogger<VentBotService> logger, DiscordClient client, IServiceProvider services) : IHostedService
+public class VentBotService(ILogger<VentBotService> logger, DiscordClient client, IServiceProvider services, IDbContextFactory<SQLite> factory) : IHostedService
 {
     #region Events
     private async Task SlashErrored(SlashCommandsExtension s, SlashCommandErrorEventArgs e)
@@ -31,8 +33,22 @@ public class VentBotService(ILogger<VentBotService> logger, DiscordClient client
 	}
     #endregion
 
+    private async Task EnsureDatabaseExistence()
+    {
+        await using SQLite context = await factory.CreateDbContextAsync();
+
+        bool deleted = context.Database.EnsureDeleted();
+		logger.LogInformation("DataBase erasure status: {}", deleted ? "success" : "failure");
+
+		bool recreated = context.Database.EnsureCreated();
+		logger.LogInformation("DataBase creation status: {}", recreated ? "success" : "failure");
+    }
+
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        // We use db-first because I can't be asked.
+        await EnsureDatabaseExistence();
+
         client.UseInteractivity(new InteractivityConfiguration { Timeout = TimeSpan.FromSeconds(30) });
 
 		SlashCommandsExtension slash = client.UseSlashCommands(new SlashCommandsConfiguration { 
